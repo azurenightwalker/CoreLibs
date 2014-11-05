@@ -1,5 +1,8 @@
 package com.androidproductions.corelibs.fragments;
 
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.view.ViewCompat;
@@ -14,18 +17,25 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.androidproductions.corelibs.R;
+import com.androidproductions.corelibs.utils.ImageLoader;
 import com.androidproductions.corelibs.views.ObservableScrollView;
 
 public abstract class ScrollablePhotoFragment extends BaseFragment implements ObservableScrollView.Callbacks {
     private static final float PHOTO_ASPECT_RATIO = 1.7777777f;
-    private ImageView mPhotoView;
-    private TextView mTitleView;
-    private TextView mSubTitleView;
+
+    private FrameLayout mPhotoViewContainer;
+    private LinearLayout mHeaderBox;
+    private ObservableScrollView mScrollView;
+    private View mDetailsContainer;
+
+    protected ImageView mPhotoView;
+    protected TextView mTitleView;
+    protected TextView mSubTitleView;
+
     private int mPhotoHeightPixels;
     private float mMaxHeaderElevation;
-    private int mHeaderHeightPixels;
-    private View mDetailsContainer;
-    protected final int mLayoutId;
+
+    protected int mLayoutId;
 
     private ViewTreeObserver.OnGlobalLayoutListener mGlobalLayoutListener
             = new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -34,18 +44,17 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
             recomputePhotoAndScrollingMetrics();
         }
     };
+    private boolean mHasPhoto;
+    private int mToolbarHeight;
+    private boolean headerStatic = false;
+    private TransitionDrawable transitionDrawable;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
      */
     public ScrollablePhotoFragment() {
-        mLayoutId = 0;
     }
-
-    private FrameLayout mPhotoViewContainer;
-    private LinearLayout mHeaderBox;
-    private ObservableScrollView mScrollView;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -79,14 +88,29 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
         if (vto.isAlive()) {
             vto.addOnGlobalLayoutListener(mGlobalLayoutListener);
         }
+        int attributeResourceId = getActivity().getTheme().obtainStyledAttributes(new int[] {R.attr.colorPrimary}).getResourceId(0, 0);
+        transitionDrawable = new TransitionDrawable(new Drawable[]{
+                new ColorDrawable(getResources().getColor(android.R.color.transparent)),
+                new ColorDrawable(getResources().getColor(attributeResourceId))
+        });
+        if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
+            // Only used when newer unavailable
+            //noinspection deprecation
+            mActionBarToolbar.setBackgroundDrawable(transitionDrawable);
+        } else {
+            mActionBarToolbar.setBackground(transitionDrawable);
+        }
         return rootView;
     }
 
-    private void recomputePhotoAndScrollingMetrics() {
-        mHeaderHeightPixels = mHeaderBox.getHeight();
-
-        mPhotoHeightPixels = (int) (mPhotoView.getWidth() / PHOTO_ASPECT_RATIO);
-        mPhotoHeightPixels = Math.min(mPhotoHeightPixels, mScrollView.getHeight() * 2 / 3);
+    protected void recomputePhotoAndScrollingMetrics() {
+        int mHeaderHeightPixels = mHeaderBox.getHeight();
+        mToolbarHeight = mActionBarToolbar.getHeight();
+        mPhotoHeightPixels = 0;
+        if (mHasPhoto) {
+            mPhotoHeightPixels = (int) (mPhotoView.getWidth() / PHOTO_ASPECT_RATIO);
+            mPhotoHeightPixels = Math.min(mPhotoHeightPixels, mScrollView.getHeight() * 2 / 3);
+        }
 
         ViewGroup.LayoutParams lp;
         lp = mPhotoViewContainer.getLayoutParams();
@@ -105,6 +129,17 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
         onScrollChanged(0, 0); // trigger scroll handling
     }
 
+    protected void setImage(int imageId)
+    {
+        mHasPhoto = true;
+        new ImageLoader(mPhotoView,getActivity(), new ImageLoader.Callback() {
+            @Override
+            public void doAction() {
+                recomputePhotoAndScrollingMetrics();
+            }
+        }).execute(imageId);
+    }
+
 
     @Override
     public void onScrollChanged(int deltaX, int deltaY) {
@@ -112,9 +147,22 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
         // but locks to the top of the screen on scroll
         int scrollY = mScrollView.getScrollY();
 
-        float newTop = Math.max(mPhotoHeightPixels, scrollY);
+        float newTop = Math.max(mPhotoHeightPixels, scrollY+mToolbarHeight);
         mHeaderBox.setTranslationY(newTop);
+        // Ensure static
+        mActionBarToolbar.setTranslationY(scrollY);
 
+        // If no longer moving
+        if (scrollY > mPhotoHeightPixels-mToolbarHeight && !headerStatic)
+        {
+            headerStatic = true;
+            transitionDrawable.startTransition(100);
+        }
+        else if (scrollY < mPhotoHeightPixels-mToolbarHeight && headerStatic)
+        {
+            headerStatic = false;
+            transitionDrawable.reverseTransition(100);
+        }
         float gapFillProgress = 1;
         if (mPhotoHeightPixels != 0) {
             gapFillProgress = Math.min(Math.max(getProgress(scrollY,

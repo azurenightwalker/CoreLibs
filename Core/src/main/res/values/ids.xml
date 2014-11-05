@@ -10,4 +10,5 @@
     <item name="scroll_root" type="id" />
     <item name="content_container" type="id" />
     <item name="max_header_elevation" type="dimen" />
+    <item name="primary" type="color" />
 </resources>
