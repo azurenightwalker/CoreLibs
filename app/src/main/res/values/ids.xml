@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="toolbar_actionbar" type="id"/>
+    <item name="actionBarSize" type="dimen"/>
+    <item name="photo_view_container" type="id" />
+    <item name="photo_view" type="id" />
+    <item name="header_box" type="id" />
+    <item name="title" type="id" />
+    <item name="subtitle" type="id" />
+    <item name="scroll_root" type="id" />
+    <item name="content_container" type="id" />
+    <item name="max_header_elevation" type="dimen" />
+</resources>
