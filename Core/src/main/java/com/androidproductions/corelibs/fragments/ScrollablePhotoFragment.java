@@ -1,9 +1,11 @@
 package com.androidproductions.corelibs.fragments;
 
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.view.ViewCompat;
@@ -51,6 +53,7 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
     private boolean headerStatic = false;
     private TransitionDrawable transitionDrawable;
     protected int mPrimary;
+    private int mPrimaryDark;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -91,8 +94,9 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
         if (vto.isAlive()) {
             vto.addOnGlobalLayoutListener(mGlobalLayoutListener);
         }
-        int attributeResourceId = getActivity().getTheme().obtainStyledAttributes(new int[] {R.attr.colorPrimary}).getResourceId(0, 0);
-        mPrimary = getResources().getColor(attributeResourceId);
+        TypedArray attributeResourceId = getActivity().getTheme().obtainStyledAttributes(new int[]{R.attr.colorPrimary, R.attr.colorPrimaryDark});
+        mPrimary = getResources().getColor(attributeResourceId.getResourceId(0,0));
+        mPrimaryDark = getResources().getColor(attributeResourceId.getResourceId(1,0));
         transitionDrawable = new TransitionDrawable(new Drawable[]{
                 new ColorDrawable(getResources().getColor(android.R.color.transparent)),
                 new ColorDrawable(mPrimary)
@@ -190,5 +194,8 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
         } else {
             mHeaderBox.setBackground(primary);
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            getActivity().getWindow().setStatusBarColor(palette.getDarkVibrantColor(mPrimaryDark));
     }
 }
