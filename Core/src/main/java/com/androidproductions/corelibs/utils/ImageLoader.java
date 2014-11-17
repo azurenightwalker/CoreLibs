@@ -9,10 +9,10 @@ import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
 
-public class ImageLoader extends AsyncTask<Integer, Void, Bitmap> {
-    private final WeakReference<ImageView> imageViewReference;
-    private final Context context;
-    private final Callback callback;
+public class ImageLoader extends AsyncTask<Long, Void, Bitmap> {
+    protected final WeakReference<ImageView> imageViewReference;
+    protected final Context context;
+    protected final Callback callback;
 
     public ImageLoader(ImageView imageView, Context context, Callback callback) {
         // Use a WeakReference to ensure the ImageView can be garbage collected
@@ -23,8 +23,8 @@ public class ImageLoader extends AsyncTask<Integer, Void, Bitmap> {
 
     // Decode image in background.
     @Override
-    protected Bitmap doInBackground(Integer... params) {
-        return decodeSampledBitmapFromResource(context.getResources(), params[0], 100, 100);
+    protected Bitmap doInBackground(Long... params) {
+        return decodeSampledBitmapFromResource(context.getResources(), params[0].intValue(), 100, 100);
     }
 
     // Once complete, see if ImageView is still around and set bitmap.
@@ -34,7 +34,7 @@ public class ImageLoader extends AsyncTask<Integer, Void, Bitmap> {
             final ImageView imageView = imageViewReference.get();
             if (imageView != null) {
                 imageView.setImageBitmap(bitmap);
-                callback.doAction();
+                callback.doAction(bitmap);
             }
         }
     }
@@ -80,6 +80,6 @@ public class ImageLoader extends AsyncTask<Integer, Void, Bitmap> {
 
     public interface Callback
     {
-        public void doAction();
+        public void doAction(Bitmap bmp);
     }
 }

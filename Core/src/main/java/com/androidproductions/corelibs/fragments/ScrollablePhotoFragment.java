@@ -1,11 +1,13 @@
 package com.androidproductions.corelibs.fragments;
 
+import android.graphics.Bitmap;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.graphics.Palette;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,10 +46,11 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
             recomputePhotoAndScrollingMetrics();
         }
     };
-    private boolean mHasPhoto;
+    protected boolean mHasPhoto;
     private int mToolbarHeight;
     private boolean headerStatic = false;
     private TransitionDrawable transitionDrawable;
+    protected int mPrimary;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -74,7 +77,7 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
                 R.dimen.max_header_elevation);
 
         final Toolbar toolbar = getActionBarToolbar(rootView);
-        toolbar.setNavigationIcon(R.drawable.abc_btn_check_material);
+        toolbar.setNavigationIcon(R.drawable.abc_ic_ab_back_mtrl_am_alpha);
 
         Handler mHandler = new Handler();
         mHandler.post(new Runnable() {
@@ -89,9 +92,10 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
             vto.addOnGlobalLayoutListener(mGlobalLayoutListener);
         }
         int attributeResourceId = getActivity().getTheme().obtainStyledAttributes(new int[] {R.attr.colorPrimary}).getResourceId(0, 0);
+        mPrimary = getResources().getColor(attributeResourceId);
         transitionDrawable = new TransitionDrawable(new Drawable[]{
                 new ColorDrawable(getResources().getColor(android.R.color.transparent)),
-                new ColorDrawable(getResources().getColor(attributeResourceId))
+                new ColorDrawable(mPrimary)
         });
         if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
             // Only used when newer unavailable
@@ -129,12 +133,12 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
         onScrollChanged(0, 0); // trigger scroll handling
     }
 
-    protected void setImage(int imageId)
+    protected void setImage(long imageId)
     {
         mHasPhoto = true;
         new ImageLoader(mPhotoView,getActivity(), new ImageLoader.Callback() {
             @Override
-            public void doAction() {
+            public void doAction(Bitmap bmp) {
                 recomputePhotoAndScrollingMetrics();
             }
         }).execute(imageId);
@@ -174,5 +178,17 @@ public abstract class ScrollablePhotoFragment extends BaseFragment implements Ob
 
         // Move background photo (parallax effect)
         mPhotoViewContainer.setTranslationY(scrollY * 0.5f);
+    }
+
+    protected void updateColors(Palette palette)
+    {
+        ColorDrawable primary = new ColorDrawable(palette.getVibrantColor(mPrimary));
+        if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
+            // Only used when newer unavailable
+            //noinspection deprecation
+            mHeaderBox.setBackgroundDrawable(primary);
+        } else {
+            mHeaderBox.setBackground(primary);
+        }
     }
 }
